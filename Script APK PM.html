@@ -1,0 +1,920 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aplikasi Kontrol Mesin</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .page {
+            display: none;
+        }
+        .page.active {
+            display: block;
+        }
+        .chart-container {
+            position: relative;
+            height: 40vh;
+            width: 80vw;
+            margin: auto;
+        }
+        .btn-primary {
+            background-color: #3b82f6;
+            color: white;
+        }
+        .btn-primary:hover {
+            background-color: #2563eb;
+        }
+        .btn-secondary {
+            background-color: #6b7280;
+            color: white;
+        }
+        .btn-secondary:hover {
+            background-color: #4b5563;
+        }
+         .btn-success {
+            background-color: #10b981;
+            color: white;
+        }
+        .btn-success:hover {
+            background-color: #059669;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800">
+
+    <!-- Halaman Login -->
+    <div id="loginPage" class="page active flex items-center justify-center min-h-screen">
+        <div class="bg-white p-8 rounded-lg shadow-md w-full max-w-sm">
+            <h1 class="text-2xl font-bold mb-6 text-center text-gray-700">Login Kontrol Mesin</h1>
+            <form id="loginForm">
+                <div class="mb-4">
+                    <label for="username" class="block text-sm font-medium text-gray-600 mb-2">Username</label>
+                    <input type="text" id="username" name="username" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                </div>
+                <div class="mb-6">
+                    <label for="password" class="block text-sm font-medium text-gray-600 mb-2">Password</label>
+                    <input type="password" id="password" name="password" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                </div>
+                <button type="submit" class="w-full btn-primary font-bold py-2 px-4 rounded-md transition duration-300">Login</button>
+            </form>
+             <p id="loginError" class="text-red-500 text-sm mt-4 text-center"></p>
+        </div>
+    </div>
+
+    <!-- Halaman Utama (Dashboard) -->
+    <div id="mainPage" class="page">
+        <header class="bg-white shadow-md p-4 flex justify-between items-center">
+            <h1 class="text-xl font-bold text-gray-700">Dashboard Kontrol Mesin</h1>
+            <button id="logoutButton" class="btn-secondary py-2 px-4 rounded-md text-sm transition duration-300">Logout</button>
+        </header>
+        <main class="p-6">
+            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-6">
+                <!-- Menu Icons -->
+                <div class="menu-item bg-white p-4 rounded-lg shadow-md text-center hover:shadow-lg transition-shadow cursor-pointer" data-page="inputPage" data-type="downtime">
+                    <i class="fas fa-clock-rotate-left fa-3x text-red-500 mb-2"></i>
+                    <p class="font-semibold">Down Time Record</p>
+                </div>
+                <div class="menu-item bg-white p-4 rounded-lg shadow-md text-center hover:shadow-lg transition-shadow cursor-pointer" data-page="inputPage" data-type="pm">
+                    <i class="fas fa-calendar-check fa-3x text-blue-500 mb-2"></i>
+                    <p class="font-semibold">PM Record</p>
+                </div>
+                <div class="menu-item bg-white p-4 rounded-lg shadow-md text-center hover:shadow-lg transition-shadow cursor-pointer" data-page="inputPage" data-type="am">
+                    <i class="fas fa-users-gear fa-3x text-green-500 mb-2"></i>
+                    <p class="font-semibold">AM Activities</p>
+                </div>
+                <div class="menu-item bg-white p-4 rounded-lg shadow-md text-center hover:shadow-lg transition-shadow cursor-pointer" data-page="inputPage" data-type="sparepart-input">
+                    <i class="fas fa-dolly fa-3x text-yellow-500 mb-2"></i>
+                    <p class="font-semibold">Input Spare Part</p>
+                </div>
+                 <div class="menu-item bg-white p-4 rounded-lg shadow-md text-center hover:shadow-lg transition-shadow cursor-pointer" data-page="sparepartUsagePage">
+                    <i class="fas fa-cart-shopping fa-3x text-purple-500 mb-2"></i>
+                    <p class="font-semibold">Penggunaan Spare Part</p>
+                </div>
+                <div class="menu-item bg-white p-4 rounded-lg shadow-md text-center hover:shadow-lg transition-shadow cursor-pointer" data-page="schedulePage">
+                    <i class="fas fa-calendar-alt fa-3x text-indigo-500 mb-2"></i>
+                    <p class="font-semibold">Jadwal PM/AM</p>
+                </div>
+                <div class="menu-item bg-white p-4 rounded-lg shadow-md text-center hover:shadow-lg transition-shadow cursor-pointer" data-page="analyticsPage">
+                    <i class="fas fa-chart-line fa-3x text-teal-500 mb-2"></i>
+                    <p class="font-semibold">Analisis & Grafik</p>
+                </div>
+                 <div class="menu-item bg-white p-4 rounded-lg shadow-md text-center hover:shadow-lg transition-shadow cursor-pointer" data-page="sparepartStockPage">
+                    <i class="fas fa-warehouse fa-3x text-orange-500 mb-2"></i>
+                    <p class="font-semibold">Stok Spare Part</p>
+                </div>
+                 <!-- Menu Admin (Hidden by default) -->
+                <div id="adminControlMenu" class="menu-item bg-white p-4 rounded-lg shadow-md text-center hover:shadow-lg transition-shadow cursor-pointer hidden" data-page="adminPage">
+                    <i class="fas fa-user-shield fa-3x text-gray-700 mb-2"></i>
+                    <p class="font-semibold">Kontrol Admin</p>
+                </div>
+                 <div class="menu-item bg-white p-4 rounded-lg shadow-md text-center hover:shadow-lg transition-shadow cursor-pointer" data-page="downtimeHistoryPage">
+                    <i class="fas fa-history fa-3x text-cyan-500 mb-2"></i>
+                    <p class="font-semibold">Riwayat Downtime</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Halaman Input (Downtime, PM, AM, Sparepart) -->
+    <div id="inputPage" class="page p-6">
+        <header class="flex items-center mb-6">
+            <button class="back-button btn-secondary py-2 px-4 rounded-md mr-4" data-target="mainPage"><i class="fas fa-arrow-left"></i> Kembali</button>
+            <h1 id="inputPageTitle" class="text-2xl font-bold text-gray-700">Input Data</h1>
+        </header>
+        <form id="inputForm" class="bg-white p-6 rounded-lg shadow-md">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label for="areaSelect" class="block text-sm font-medium text-gray-600 mb-2">Pilih Area</label>
+                    <select id="areaSelect" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="">-- Pilih Area --</option>
+                        <option value="clean_room">Clean Room</option>
+                        <option value="assembly">Assembly</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="machineTypeSelect" class="block text-sm font-medium text-gray-600 mb-2">Jenis Mesin</label>
+                    <select id="machineTypeSelect" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" disabled>
+                        <option value="">-- Pilih Jenis Mesin --</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="machineNo" class="block text-sm font-medium text-gray-600 mb-2">No. Mesin</label>
+                    <input type="text" id="machineNo" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                 <div id="partNameContainer" class="hidden">
+                    <label for="partName" class="block text-sm font-medium text-gray-600 mb-2">Nama Part</label>
+                    <input type="text" id="partName" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                 <div id="partStockContainer" class="hidden">
+                    <label for="partStock" class="block text-sm font-medium text-gray-600 mb-2">Jumlah Stok</label>
+                    <input type="number" id="partStock" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                 <div id="partMinStockContainer" class="hidden">
+                    <label for="partMinStock" class="block text-sm font-medium text-gray-600 mb-2">Stok Minimum</label>
+                    <input type="number" id="partMinStock" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label for="eventDate" class="block text-sm font-medium text-gray-600 mb-2">Tanggal & Waktu</label>
+                    <input type="datetime-local" id="eventDate" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+            </div>
+            <div class="mt-6">
+                 <button type="submit" id="nextButton" class="btn-primary font-bold py-2 px-6 rounded-md transition duration-300">Lanjut</button>
+                 <button type="submit" id="savePartButton" class="btn-primary font-bold py-2 px-6 rounded-md transition duration-300 hidden">Simpan Part</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Halaman Detail Downtime -->
+    <div id="downtimeDetailPage" class="page p-6">
+         <header class="flex items-center mb-6">
+            <button class="back-button btn-secondary py-2 px-4 rounded-md mr-4" data-target="inputPage"><i class="fas fa-arrow-left"></i> Kembali</button>
+            <h1 class="text-2xl font-bold text-gray-700">Detail Informasi Downtime</h1>
+        </header>
+        <form id="downtimeDetailForm" class="bg-white p-6 rounded-lg shadow-md">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label for="downtimeType" class="block text-sm font-medium text-gray-600 mb-2">Jenis Down Time</label>
+                     <select id="downtimeType" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="">-- Pilih Jenis --</option>
+                        <option value="Mekanik">Mekanik</option>
+                        <option value="Elektrik">Elektrik</option>
+                        <option value="Software">Software</option>
+                        <option value="Proses">Proses</option>
+                        <option value="Menunggu Part">Menunggu Part</option>
+                        <option value="Lain-lain">Lain-lain</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="downtimeCause" class="block text-sm font-medium text-gray-600 mb-2">Penyebab Down Time</label>
+                    <input type="text" id="downtimeCause" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+            </div>
+            <div class="mt-4">
+                <label for="tempPrevention" class="block text-sm font-medium text-gray-600 mb-2">Pencegahan Sementara (jika gagal fungsi)</label>
+                <textarea id="tempPrevention" rows="3" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+            </div>
+            <div class="mt-4">
+                <label for="eventDescription" class="block text-sm font-medium text-gray-600 mb-2">Uraian Peristiwa</label>
+                <textarea id="eventDescription" rows="4" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+            </div>
+            <div class="mt-6">
+                 <button type="submit" class="btn-primary font-bold py-2 px-6 rounded-md transition duration-300">Simpan Data</button>
+            </div>
+        </form>
+    </div>
+    
+    <!-- Halaman Penggunaan Spare Part -->
+    <div id="sparepartUsagePage" class="page p-6">
+        <header class="flex items-center mb-6">
+            <button class="back-button btn-secondary py-2 px-4 rounded-md mr-4" data-target="mainPage"><i class="fas fa-arrow-left"></i> Kembali</button>
+            <h1 class="text-2xl font-bold text-gray-700">Penggunaan Spare Part Consumable</h1>
+        </header>
+        <form id="sparepartUsageForm" class="bg-white p-6 rounded-lg shadow-md">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label for="usagePartSelect" class="block text-sm font-medium text-gray-600 mb-2">Pilih Part</label>
+                    <select id="usagePartSelect" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="">-- Pilih Spare Part --</option>
+                    </select>
+                </div>
+                 <div>
+                    <label for="usageQuantity" class="block text-sm font-medium text-gray-600 mb-2">Jumlah Digunakan</label>
+                    <input type="number" id="usageQuantity" min="1" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+            </div>
+             <p class="mt-4 text-sm text-gray-500">Stok saat ini: <span id="currentStock" class="font-bold">_</span></p>
+            <div class="mt-6">
+                 <button type="submit" class="btn-primary font-bold py-2 px-6 rounded-md transition duration-300">Catat Penggunaan</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Halaman Penjadwalan PM/AM -->
+    <div id="schedulePage" class="page p-6">
+        <header class="flex items-center mb-6">
+            <button class="back-button btn-secondary py-2 px-4 rounded-md mr-4" data-target="mainPage"><i class="fas fa-arrow-left"></i> Kembali</button>
+            <h1 class="text-2xl font-bold text-gray-700">Penjadwalan PM dan AM</h1>
+        </header>
+        <div class="bg-white p-6 rounded-lg shadow-md mb-6">
+            <h2 class="text-xl font-semibold mb-4">Input Jadwal Baru</h2>
+            <form id="scheduleForm">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <select id="scheduleType" class="w-full px-4 py-2 border border-gray-300 rounded-md">
+                        <option value="pm">Jadwal PM</option>
+                        <option value="am">Jadwal AM</option>
+                    </select>
+                    <input type="text" id="scheduleMachine" placeholder="No. Mesin" class="w-full px-4 py-2 border border-gray-300 rounded-md">
+                    <input type="datetime-local" id="scheduleDate" class="w-full px-4 py-2 border border-gray-300 rounded-md">
+                </div>
+                <button type="submit" class="mt-4 btn-primary font-bold py-2 px-6 rounded-md">Tambah Jadwal</button>
+            </form>
+        </div>
+        <div class="bg-white p-6 rounded-lg shadow-md">
+             <h2 class="text-xl font-semibold mb-4">Jadwal Mendatang</h2>
+             <div class="overflow-x-auto">
+                <table class="min-w-full bg-white" id="scheduleTable">
+                    <thead class="bg-gray-200">
+                        <tr>
+                            <th class="py-2 px-4 text-left">Tipe</th>
+                            <th class="py-2 px-4 text-left">No. Mesin</th>
+                            <th class="py-2 px-4 text-left">Waktu</th>
+                            <th class="py-2 px-4 text-left">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Data jadwal akan ditambahkan di sini -->
+                    </tbody>
+                </table>
+             </div>
+        </div>
+    </div>
+
+    <!-- Halaman Riwayat Downtime -->
+    <div id="downtimeHistoryPage" class="page p-6">
+        <header class="flex items-center mb-6">
+            <button class="back-button btn-secondary py-2 px-4 rounded-md mr-4" data-target="mainPage"><i class="fas fa-arrow-left"></i> Kembali</button>
+            <h1 class="text-2xl font-bold text-gray-700">Riwayat Kejadian Down Time</h1>
+        </header>
+        <div class="bg-white p-6 rounded-lg shadow-md">
+             <div class="overflow-x-auto">
+                <table class="min-w-full bg-white" id="downtimeHistoryTable">
+                    <thead class="bg-gray-200">
+                        <tr>
+                            <th class="py-2 px-4 text-left">Tanggal</th>
+                            <th class="py-2 px-4 text-left">Area</th>
+                            <th class="py-2 px-4 text-left">No. Mesin</th>
+                            <th class="py-2 px-4 text-left">Penyebab</th>
+                            <th class="py-2 px-4 text-left">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Data riwayat downtime akan dimuat di sini -->
+                    </tbody>
+                </table>
+             </div>
+        </div>
+    </div>
+    
+    <!-- Notifikasi -->
+    <div id="notification" class="fixed top-5 right-5 bg-green-500 text-white py-2 px-4 rounded-lg shadow-md transition-transform translate-x-full">
+        Data berhasil disimpan!
+    </div>
+
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+
+    // --- State Management & Data --- //
+    const state = {
+        currentPage: 'loginPage',
+        currentUser: null,
+        users: [
+            { username: 'admin', password: 'admin' },
+            { username: 'user', password: 'user123' }
+        ],
+        currentInputType: null, // 'downtime', 'pm', 'am', 'sparepart-input'
+        downtimeData: [],
+        pmData: [],
+        amData: [],
+        spareparts: [
+            { id: 1, name: 'Bearing 6203', stock: 50, minStock: 10 },
+            { id: 2, name: 'V-Belt A-34', stock: 8, minStock: 5 },
+            { id: 3, name: 'Seal TC 20x40x7', stock: 30, minStock: 15 },
+        ],
+        schedules: [
+            { type: 'pm', machine: 'WB-01', date: '2025-09-28T10:00' },
+            { type: 'am', machine: 'DB-05', date: '2025-09-29T14:30' },
+        ],
+    };
+    
+    // --- Mock Data --- //
+    state.downtimeData = [
+        { id: 1679312400000, area: 'clean_room', machineType: 'Wire bond', machineNo: 'WB-01', date: '2025-09-20T10:00', downtimeType: 'Mekanik', cause: 'Wire Jam', prevention: 'Reset wire clamp', description: 'Kawat macet saat proses bonding.' },
+        { id: 1679401800000, area: 'assembly', machineType: 'Molding', machineNo: 'MD-03', date: '2025-09-21T14:15', downtimeType: 'Elektrik', cause: 'Sensor Error', prevention: 'Kalibrasi ulang sensor', description: 'Sensor posisi mold tidak membaca.' },
+        { id: 1679482800000, area: 'clean_room', machineType: 'Die bond', machineNo: 'DB-02', date: '2025-09-22T09:00', downtimeType: 'Mekanik', cause: 'Vacuum Tip Patah', prevention: 'Ganti tip', description: 'Tip vacuum patah saat mengambil die.' },
+        { id: 1679571000000, area: 'assembly', machineType: 'Ftest', machineNo: 'FT-08', date: '2025-09-23T11:30', downtimeType: 'Software', cause: 'Program Hang', prevention: 'Restart PC', description: 'Software test berhenti merespon.' },
+        { id: 1679664000000, area: 'clean_room', machineType: 'Wire bond', machineNo: 'WB-01', date: '2025-09-24T16:00', downtimeType: 'Mekanik', cause: 'Wire Jam', prevention: 'Cek tensioner', description: 'Wire jam lagi, tensioner perlu dicek.' },
+    ];
+    state.pmData = [
+        { area: 'clean_room', machineType: 'Wire bond', machineNo: 'WB-02', date: '2025-09-15T08:00'},
+        { area: 'assembly', machineType: 'Molding', machineNo: 'MD-01', date: '2025-09-16T08:00'},
+    ];
+    state.amData = [
+        { area: 'assembly', machineType: 'Meja visual', machineNo: 'VIS-04', date: '2025-09-18T09:00'},
+    ];
+
+
+    // --- Elemen DOM --- //
+    const pages = document.querySelectorAll('.page');
+    const loginForm = document.getElementById('loginForm');
+    const loginError = document.getElementById('loginError');
+    const logoutButton = document.getElementById('logoutButton');
+    const menuItems = document.querySelectorAll('.menu-item');
+    const backButtons = document.querySelectorAll('.back-button');
+    const areaSelect = document.getElementById('areaSelect');
+    const machineTypeSelect = document.getElementById('machineTypeSelect');
+    const inputPageTitle = document.getElementById('inputPageTitle');
+    const adminControlMenu = document.getElementById('adminControlMenu');
+    
+    const inputForm = document.getElementById('inputForm');
+    const nextButton = document.getElementById('nextButton');
+    const savePartButton = document.getElementById('savePartButton');
+
+    const partNameContainer = document.getElementById('partNameContainer');
+    const partStockContainer = document.getElementById('partStockContainer');
+    const partMinStockContainer = document.getElementById('partMinStockContainer');
+    
+    const downtimeDetailForm = document.getElementById('downtimeDetailForm');
+    const sparepartUsageForm = document.getElementById('sparepartUsageForm');
+    const scheduleForm = document.getElementById('scheduleForm');
+    const addUserForm = document.getElementById('addUserForm');
+    const notification = document.getElementById('notification');
+
+    // --- Pilihan Mesin --- //
+    const machineOptions = {
+        clean_room: ['Wire bond', 'Die bond'],
+        assembly: ['Jungction fill', 'Globtop', 'Cure', 'Molding', 'Ftest', 'SCP', 'Packing', 'Meja visual']
+    };
+
+    // --- Navigasi & Tampilan --- //
+    function navigateTo(pageId) {
+        pages.forEach(page => {
+            page.classList.toggle('active', page.id === pageId);
+        });
+        state.currentPage = pageId;
+    }
+
+    function showNotification(message, isError = false) {
+        notification.textContent = message;
+        notification.classList.toggle('bg-red-500', isError);
+        notification.classList.toggle('bg-green-500', !isError);
+        notification.classList.remove('translate-x-full');
+        setTimeout(() => {
+            notification.classList.add('translate-x-full');
+        }, 3000);
+    }
+
+    // --- Logika Halaman --- //
+
+    // Login
+    loginForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const username = e.target.username.value;
+        const password = e.target.password.value;
+        
+        const user = state.users.find(u => u.username === username && u.password === password);
+
+        if (user) {
+            state.currentUser = user.username;
+            navigateTo('mainPage');
+            loginForm.reset();
+            loginError.textContent = '';
+            
+            // Tampilkan menu admin jika user adalah 'admin'
+            adminControlMenu.classList.toggle('hidden', user.username !== 'admin');
+        } else {
+            loginError.textContent = 'Username atau password salah!';
+        }
+    });
+
+    logoutButton.addEventListener('click', () => {
+        state.currentUser = null;
+        adminControlMenu.classList.add('hidden'); // Sembunyikan menu admin saat logout
+        navigateTo('loginPage');
+    });
+    
+    // Menu Utama
+    menuItems.forEach(item => {
+        item.addEventListener('click', () => {
+            const page = item.dataset.page;
+            const type = item.dataset.type;
+            if (type) {
+                state.currentInputType = type;
+                setupInputPage(type);
+            }
+            if (page === 'adminPage') {
+                renderUserTable();
+            }
+            if (page === 'downtimeHistoryPage') {
+                renderDowntimeHistoryTable();
+            }
+            navigateTo(page);
+        });
+    });
+
+    // Tombol Kembali
+    backButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            navigateTo(button.dataset.target);
+        });
+    });
+    
+    // Halaman Input
+    function setupInputPage(type) {
+        const titles = {
+            'downtime': 'Input Down Time Record',
+            'pm': 'Input PM Record',
+            'am': 'Input AM Activities',
+            'sparepart-input': 'Input Spare Part Baru'
+        };
+        inputPageTitle.textContent = titles[type];
+        
+        const showPartFields = type === 'sparepart-input';
+        partNameContainer.classList.toggle('hidden', !showPartFields);
+        partStockContainer.classList.toggle('hidden', !showPartFields);
+        partMinStockContainer.classList.toggle('hidden', !showPartFields);
+
+        const showRegularFields = !showPartFields;
+        areaSelect.parentElement.classList.toggle('hidden', !showRegularFields);
+        machineTypeSelect.parentElement.classList.toggle('hidden', !showRegularFields);
+        document.getElementById('machineNo').parentElement.classList.toggle('hidden', !showRegularFields);
+        document.getElementById('eventDate').parentElement.classList.toggle('hidden', !showRegularFields);
+
+        nextButton.classList.toggle('hidden', showPartFields);
+        savePartButton.classList.toggle('hidden', !showPartFields);
+
+        inputForm.reset();
+        machineTypeSelect.innerHTML = '<option value="">-- Pilih Jenis Mesin --</option>';
+        machineTypeSelect.disabled = true;
+    }
+
+    areaSelect.addEventListener('change', () => {
+        const selectedArea = areaSelect.value;
+        machineTypeSelect.innerHTML = '<option value="">-- Pilih Jenis Mesin --</option>';
+        if (selectedArea && machineOptions[selectedArea]) {
+            machineOptions[selectedArea].forEach(machine => {
+                const option = document.createElement('option');
+                option.value = machine.toLowerCase().replace(' ', '_');
+                option.textContent = machine;
+                machineTypeSelect.appendChild(option);
+            });
+            machineTypeSelect.disabled = false;
+        } else {
+            machineTypeSelect.disabled = true;
+        }
+    });
+
+    inputForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        
+        if (state.currentInputType === 'downtime') {
+            navigateTo('downtimeDetailPage');
+        } else if (state.currentInputType === 'sparepart-input') {
+             const newPart = {
+                id: state.spareparts.length + 1,
+                name: document.getElementById('partName').value,
+                stock: parseInt(document.getElementById('partStock').value),
+                minStock: parseInt(document.getElementById('partMinStock').value)
+            };
+            state.spareparts.push(newPart);
+            showNotification('Spare part baru berhasil disimpan!');
+            inputForm.reset();
+            updateSparepartStockTable();
+            updateSparepartUsageDropdown();
+        }
+        else {
+            const data = {
+                area: areaSelect.value,
+                machineType: machineTypeSelect.options[machineTypeSelect.selectedIndex].text,
+                machineNo: document.getElementById('machineNo').value,
+                date: document.getElementById('eventDate').value,
+            };
+
+            if (state.currentInputType === 'pm') state.pmData.push(data);
+            if (state.currentInputType === 'am') state.amData.push(data);
+
+            showNotification('Data berhasil disimpan!');
+            inputForm.reset();
+            navigateTo('mainPage');
+            updatePMStatusChart();
+        }
+    });
+
+    downtimeDetailForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const data = {
+            id: Date.now(),
+            area: areaSelect.value,
+            machineType: machineTypeSelect.options[machineTypeSelect.selectedIndex].text,
+            machineNo: document.getElementById('machineNo').value,
+            date: document.getElementById('eventDate').value,
+            downtimeType: document.getElementById('downtimeType').value,
+            cause: document.getElementById('downtimeCause').value,
+            prevention: document.getElementById('tempPrevention').value,
+            description: document.getElementById('eventDescription').value,
+        };
+        state.downtimeData.push(data);
+        showNotification('Data downtime berhasil disimpan!');
+        downtimeDetailForm.reset();
+        navigateTo('mainPage');
+        updateDowntimeChart();
+    });
+
+    // Penggunaan Spare Part
+    function updateSparepartUsageDropdown() {
+        const select = document.getElementById('usagePartSelect');
+        select.innerHTML = '<option value="">-- Pilih Spare Part --</option>';
+        state.spareparts.forEach(part => {
+             const option = document.createElement('option');
+             option.value = part.id;
+             option.textContent = part.name;
+             select.appendChild(option);
+        });
+    }
+
+    document.getElementById('usagePartSelect').addEventListener('change', (e) => {
+        const partId = parseInt(e.target.value);
+        const part = state.spareparts.find(p => p.id === partId);
+        document.getElementById('currentStock').textContent = part ? part.stock : '_';
+    });
+
+    sparepartUsageForm.addEventListener('submit', e => {
+        e.preventDefault();
+        const partId = parseInt(document.getElementById('usagePartSelect').value);
+        const quantity = parseInt(document.getElementById('usageQuantity').value);
+        const part = state.spareparts.find(p => p.id === partId);
+
+        if (!part || !quantity) {
+            showNotification('Pilih part dan jumlah terlebih dahulu.', true);
+            return;
+        }
+
+        if (part.stock < quantity) {
+            showNotification('Stok tidak mencukupi.', true);
+            return;
+        }
+
+        part.stock -= quantity;
+        showNotification('Penggunaan part berhasil dicatat.');
+        sparepartUsageForm.reset();
+        document.getElementById('currentStock').textContent = '_';
+        updateSparepartStockTable();
+        
+        if (part.stock < part.minStock) {
+            showNotification(`PERINGATAN: Stok ${part.name} di bawah minimum! Sisa ${part.stock}.`, true);
+        }
+    });
+
+    // Penjadwalan
+    function renderScheduleTable() {
+        const tableBody = document.querySelector('#scheduleTable tbody');
+        tableBody.innerHTML = '';
+        state.schedules
+            .sort((a,b) => new Date(a.date) - new Date(b.date))
+            .forEach((schedule, index) => {
+            const row = tableBody.insertRow();
+            row.innerHTML = `
+                <td class="py-2 px-4 border-b">${schedule.type.toUpperCase()}</td>
+                <td class="py-2 px-4 border-b">${schedule.machine}</td>
+                <td class="py-2 px-4 border-b">${new Date(schedule.date).toLocaleString('id-ID')}</td>
+                <td class="py-2 px-4 border-b"><button class="text-red-500 delete-schedule" data-index="${index}"><i class="fas fa-trash"></i></button></td>
+            `;
+        });
+    }
+    
+    document.querySelector('#scheduleTable').addEventListener('click', (e) => {
+        if (e.target.closest('.delete-schedule')) {
+            const index = e.target.closest('.delete-schedule').dataset.index;
+            state.schedules.splice(index, 1);
+            renderScheduleTable();
+            showNotification('Jadwal berhasil dihapus.');
+        }
+    });
+
+    scheduleForm.addEventListener('submit', e => {
+        e.preventDefault();
+        const newSchedule = {
+            type: document.getElementById('scheduleType').value,
+            machine: document.getElementById('scheduleMachine').value,
+            date: document.getElementById('scheduleDate').value,
+        };
+
+        if(!newSchedule.machine || !newSchedule.date) {
+            showNotification('Mohon lengkapi semua field.', true);
+            return;
+        }
+        
+        state.schedules.push(newSchedule);
+        renderScheduleTable();
+        scheduleForm.reset();
+        showNotification('Jadwal baru berhasil ditambahkan.');
+    });
+
+
+    // --- Halaman Kontrol Admin --- //
+    function renderUserTable() {
+        const tableBody = document.querySelector('#userTable tbody');
+        tableBody.innerHTML = '';
+        state.users.forEach((user, index) => {
+            const row = tableBody.insertRow();
+            const deleteButton = user.username === 'admin' 
+                ? `<span class="text-gray-400 italic">Tidak bisa dihapus</span>` 
+                : `<button class="text-red-500 hover:text-red-700 delete-user" data-index="${index}"><i class="fas fa-trash"></i> Hapus</button>`;
+            row.innerHTML = `
+                <td class="py-2 px-4 border-b">${user.username}</td>
+                <td class="py-2 px-4 border-b">${deleteButton}</td>
+            `;
+        });
+    }
+
+    addUserForm.addEventListener('submit', e => {
+        e.preventDefault();
+        const newUsername = document.getElementById('newUsername').value.trim();
+        const newPassword = document.getElementById('newPassword').value.trim();
+
+        if (!newUsername || !newPassword) {
+            showNotification('Username dan password tidak boleh kosong.', true);
+            return;
+        }
+
+        if (state.users.some(u => u.username === newUsername)) {
+            showNotification('Username sudah ada.', true);
+            return;
+        }
+
+        state.users.push({ username: newUsername, password: newPassword });
+        renderUserTable();
+        addUserForm.reset();
+        showNotification('User baru berhasil ditambahkan.');
+    });
+
+    document.querySelector('#userTable').addEventListener('click', (e) => {
+        const deleteButton = e.target.closest('.delete-user');
+        if (deleteButton) {
+            const index = deleteButton.dataset.index;
+            state.users.splice(index, 1);
+            renderUserTable();
+            showNotification('User berhasil dihapus.');
+        }
+    });
+
+    // --- Halaman Riwayat Downtime --- //
+    function renderDowntimeHistoryTable() {
+        const tableBody = document.querySelector('#downtimeHistoryTable tbody');
+        tableBody.innerHTML = '';
+        if (state.downtimeData.length === 0) {
+            tableBody.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-gray-500">Belum ada data downtime.</td></tr>`;
+            return;
+        }
+
+        state.downtimeData
+            .sort((a,b) => new Date(b.date) - new Date(a.date)) // Show newest first
+            .forEach((event) => {
+            const row = tableBody.insertRow();
+            row.innerHTML = `
+                <td class="py-2 px-4 border-b">${new Date(event.date).toLocaleString('id-ID')}</td>
+                <td class="py-2 px-4 border-b">${event.area.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}</td>
+                <td class="py-2 px-4 border-b">${event.machineNo}</td>
+                <td class="py-2 px-4 border-b">${event.cause}</td>
+                <td class="py-2 px-4 border-b">
+                    <button class="text-red-500 hover:text-red-700 delete-downtime" data-id="${event.id}">
+                        <i class="fas fa-trash"></i> Hapus
+                    </button>
+                </td>
+            `;
+        });
+    }
+
+    document.querySelector('#downtimeHistoryTable').addEventListener('click', (e) => {
+        const deleteButton = e.target.closest('.delete-downtime');
+        if (deleteButton) {
+            const downtimeId = parseInt(deleteButton.dataset.id);
+            const originalIndex = state.downtimeData.findIndex(d => d.id === downtimeId);
+
+            if (originalIndex > -1) {
+                state.downtimeData.splice(originalIndex, 1);
+                
+                // Refresh UI
+                renderDowntimeHistoryTable();
+                updateDowntimeChart(); 
+                
+                showNotification('Kejadian downtime berhasil dihapus.');
+            }
+        }
+    });
+
+    // --- Halaman Analitik --- //
+    let downtimeChartInstance, pmStatusChartInstance;
+    const resetAnalyticsButton = document.getElementById('resetAnalyticsButton');
+
+    resetAnalyticsButton.addEventListener('click', () => {
+        // Reset filter
+        document.getElementById('top5Filter').value = 'all';
+        
+        // Rerender charts and table to original state
+        updateDowntimeChart();
+        updatePMStatusChart();
+        renderTop5Table();
+        
+        showNotification('Tampilan analisis telah di-reset.');
+    });
+
+
+    function updateDowntimeChart() {
+        const ctx = document.getElementById('downtimeChart').getContext('2d');
+        const causes = {};
+        state.downtimeData.forEach(d => {
+            causes[d.cause] = (causes[d.cause] || 0) + 1;
+        });
+
+        const labels = Object.keys(causes);
+        const data = Object.values(causes);
+
+        if (downtimeChartInstance) {
+            downtimeChartInstance.destroy();
+        }
+
+        downtimeChartInstance = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Jumlah Kejadian Down Time',
+                    data: data,
+                    backgroundColor: 'rgba(239, 68, 68, 0.6)',
+                    borderColor: 'rgba(239, 68, 68, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                scales: {
+                    y: { beginAtZero: true }
+                },
+                responsive: true,
+                maintainAspectRatio: false
+            }
+        });
+    }
+
+    function updatePMStatusChart() {
+        const ctx = document.getElementById('pmStatusChart').getContext('2d');
+        const pmDone = state.pmData.length;
+        const pmTarget = 10;
+        const pmOutstanding = pmTarget - pmDone;
+
+        if (pmStatusChartInstance) {
+            pmStatusChartInstance.destroy();
+        }
+        
+        pmStatusChartInstance = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['PM Selesai', 'PM Belum Selesai'],
+                datasets: [{
+                    label: 'Status PM',
+                    data: [pmDone, pmOutstanding > 0 ? pmOutstanding : 0],
+                    backgroundColor: [
+                        'rgba(59, 130, 246, 0.7)',
+                        'rgba(209, 213, 219, 0.7)',
+                    ],
+                }]
+            },
+             options: {
+                responsive: true,
+                maintainAspectRatio: false
+            }
+        });
+    }
+    
+    function renderTop5Table() {
+        const filter = document.getElementById('top5Filter').value;
+        const filteredData = state.downtimeData.filter(d => filter === 'all' || d.area === filter);
+
+        const causes = {};
+        filteredData.forEach(d => {
+            causes[d.cause] = (causes[d.cause] || 0) + 1;
+        });
+
+        const sortedCauses = Object.entries(causes).sort(([,a],[,b]) => b-a).slice(0, 5);
+        
+        const tableBody = document.querySelector('#top5Table tbody');
+        tableBody.innerHTML = '';
+        sortedCauses.forEach(([cause, count], index) => {
+             const row = tableBody.insertRow();
+             row.innerHTML = `
+                <td class="py-2 px-4 border-b">${index + 1}</td>
+                <td class="py-2 px-4 border-b">${cause}</td>
+                <td class="py-2 px-4 border-b">${count}</td>
+            `;
+        });
+    }
+
+    document.getElementById('searchTop5').addEventListener('click', renderTop5Table);
+    
+    // Stok Spare Part
+    function updateSparepartStockTable() {
+        const tableBody = document.querySelector('#stockTable tbody');
+        tableBody.innerHTML = '';
+        state.spareparts.forEach(part => {
+            const isLow = part.stock < part.minStock;
+            const row = tableBody.insertRow();
+            row.className = isLow ? 'bg-red-100' : '';
+            row.innerHTML = `
+                <td class="py-2 px-4 border-b">${part.name}</td>
+                <td class="py-2 px-4 border-b">${part.stock}</td>
+                <td class="py-2 px-4 border-b">${part.minStock}</td>
+                <td class="py-2 px-4 border-b font-semibold ${isLow ? 'text-red-600' : 'text-green-600'}">
+                    ${isLow ? 'Stok Rendah' : 'Aman'}
+                </td>
+            `;
+        });
+    }
+
+    // Fitur Salin & Export
+    function copyTable(tableId) {
+        const table = document.getElementById(tableId);
+        let text = '';
+        for (const row of table.rows) {
+            let rowText = [];
+            for (const cell of row.cells) {
+                rowText.push(cell.innerText);
+            }
+            text += rowText.join('\t') + '\n';
+        }
+        navigator.clipboard.writeText(text).then(() => {
+            showNotification('Data tabel disalin ke clipboard!');
+        }, () => {
+            showNotification('Gagal menyalin data.', true);
+        });
+    }
+    
+    function exportTableToExcel(tableId, filename = 'data') {
+        const table = document.getElementById(tableId);
+        const wb = XLSX.utils.table_to_book(table, {sheet:"Sheet1"});
+        XLSX.writeFile(wb, `${filename}_${new Date().toISOString().slice(0,10)}.xlsx`);
+    }
+
+    document.getElementById('copyTop5').addEventListener('click', () => copyTable('top5Table'));
+    document.getElementById('exportTop5').addEventListener('click', () => exportTableToExcel('top5Table', 'Top5_Downtime'));
+    document.getElementById('copyStock').addEventListener('click', () => copyTable('stockTable'));
+    document.getElementById('exportStock').addEventListener('click', () => exportTableToExcel('stockTable', 'Stok_Sparepart'));
+
+    // --- Inisialisasi Aplikasi --- //
+    function initialize() {
+        navigateTo('loginPage');
+        updateSparepartUsageDropdown();
+        updateSparepartStockTable();
+        renderScheduleTable();
+        updateDowntimeChart();
+        updatePMStatusChart();
+        renderTop5Table();
+    }
+
+    initialize();
+});
+</script>
+
+</body>
+</html>
+
+
+
